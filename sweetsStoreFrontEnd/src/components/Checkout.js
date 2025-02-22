@@ -23,10 +23,9 @@ const Checkout = () => {
   const [error, setError] = useState("");
   const [cartItems, setCartItems] = useState([]);
 
-  // دالة لتوليد رقم طلب فريد
   const generateOrderNumber = (userId) => {
-    const randomNumbers = Math.floor(Math.random() * 90 + 10); // توليد رقمين عشوائيين بين 10 و 99
-    return `${userId}${randomNumbers}`; // دمج user_id مع الرقمين العشوائيين
+    const randomNumbers = Math.floor(Math.random() * 1000 + 1); 
+    return `${userId}${randomNumbers}`; 
   };
 
   useEffect(() => {
@@ -148,11 +147,11 @@ const Checkout = () => {
     }
   
     try {
-      const orderNumber = generateOrderNumber(userData?.id || "GUEST"); // إنشاء رقم الطلب الفريد
+      const orderNumber = generateOrderNumber(userData?.id || "GUEST");
   
       const orderData = {
         user_id: isLoggedIn ? userData.id : null,
-        checkout_num: orderNumber, // إضافة رقم الطلب الفريد إلى البيانات المرسلة
+        checkout_num: orderNumber,
         total_product: cartItems.length,
         total_price:
           cartItems.reduce((total, cart) => {
@@ -160,7 +159,8 @@ const Checkout = () => {
               total +
               (cart.product?.product_price || cart.product_price) * cart.quantity
             );
-          }, 0) + 7,
+          }, 0) + 5,
+        status: "pending",
       };
   
       const orderResponse = await axios.post(
@@ -169,35 +169,45 @@ const Checkout = () => {
       );
   
       if (orderResponse.status === 200) {
-        const userDetailsResponse = await axios.post(
-          "http://127.0.0.1:8000/api/usersDetails",
-          {
+        for (const cartItem of cartItems) {
+          await axios.post("http://127.0.0.1:8000/api/usersOrderItem", {
+            user_id: isLoggedIn ? userData.id : null,
+            checkout_num: orderNumber,
             order_id: orderResponse.data.order.id,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            city: formData.city,
-            address: formData.address,
-          }
-        );
-  
-        if (userDetailsResponse.status === 200) {
-          Swal.fire({
-            icon: "success",
-            title: "تم تأكيد الطلب بنجاح",
-            text: `طلبك قيد التحضير! رقم الطلب: ${orderNumber}`,
+            product_id: cartItem.product_id || cartItem.id,
+            quantity: cartItem.quantity,
+            price: cartItem.product?.product_price || cartItem.product_price,
+            weight: cartItem.weight || null,
           });
-  
-          if (isLoggedIn) {
-            await axios.post("http://127.0.0.1:8000/api/clearCartUsersSide", {
-              user_id: userData.id,
-            });
-          } else {
-            sessionStorage.removeItem("cart");
-          }
-  
-          navigate("/");
         }
+  
+        const deliveryData = {
+          checkout_num: orderNumber,
+          total_price: orderData.total_price,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+        };
+  
+        await axios.post("http://127.0.0.1:8000/api/orderDelivery", deliveryData);
+  
+        Swal.fire({
+          icon: "success",
+          title: "تم تأكيد الطلب بنجاح",
+          text: `طلبك قيد التحضير! رقم الطلب: ${orderNumber}`,
+        });
+  
+        if (isLoggedIn) {
+          await axios.post("http://127.0.0.1:8000/api/clearCartUsersSide", {
+            user_id: userData.id,
+          });
+        } else {
+          sessionStorage.removeItem("cart");
+        }
+  
+        navigate("/");
       }
     } catch (error) {
       console.error("حدث خطأ أثناء تأكيد الطلب:", error);
@@ -208,7 +218,6 @@ const Checkout = () => {
       });
     }
   };
-
   return (
     <>
       <section className="checkout-section py-5">
@@ -275,83 +284,83 @@ const Checkout = () => {
                 </div>
               ) : (
                 <div className="bg-white p-4 rounded-3 shadow-sm">
-                  <h4 className="mb-4">بيانات المستخدم</h4>
-                  <form>
-                    <div className="row g-3">
-                      <div className="col-12">
-                        <label className="form-label">الاسم الكامل</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={formData.name}
-                          onChange={handleChange}
-                          name="name"
-                          required
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label">البريد الإلكتروني</label>
-                        <input
-                          type="email"
-                          className="form-control"
-                          value={formData.email}
-                          onChange={handleChange}
-                          name="email"
-                          required
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label">رقم الهاتف</label>
-                        <input
-                          type="tel"
-                          className="form-control"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          name="phone"
-                          required
-                        />
-                      </div>
-                      <div className="col-12">
-                        <label className="form-label">العنوان</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={formData.address}
-                          onChange={handleChange}
-                          name="address"
-                          required
-                        />
-                      </div>
-                      <div className="col-12">
-                        <label className="form-label">المدينة</label>
-                        <select
-                          className="form-control"
-                          value={formData.city}
-                          onChange={handleChange}
-                          name="city"
-                          required
-                        >
-                          <option value="" disabled>
-                            اختر المدينة
-                          </option>
-                          <option value="عمان">عمان</option>
-                          <option value="إربد">إربد</option>
-                          <option value="زرقاء">الزرقاء</option>
-                          <option value="جرش">جرش</option>
-                          <option value="المفرق">المفرق</option>
-                          <option value="العقبة">العقبة</option>
-                          <option value="معان">معان</option>
-                          <option value="السلط">السلط</option>
-                          <option value="مادبا">مادبا</option>
-                          <option value="الكرك">الكرك</option>
-                          <option value="الطفيلة">الطفيلة</option>
-                          <option value="البلقاء">البلقاء</option>
-                          <option value="عجلون">عجلون</option>
-                        </select>
-                      </div>
+                <h4 className="mb-4">بيانات المستخدم</h4>
+                <form>
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <label className="form-label">الاسم الكامل</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.name}
+                        onChange={handleChange}
+                        name="name"
+                        required
+                      />
                     </div>
-                  </form>
-                </div>
+                    <div className="col-md-6">
+                      <label className="form-label">البريد الإلكتروني</label>
+                      <input
+                        type="email"
+                        className="form-control"
+                        value={formData.email}
+                        onChange={handleChange}
+                        name="email"
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">رقم الهاتف</label>
+                      <input
+                        type="tel"
+                        className="form-control"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        name="phone"
+                        required
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label">العنوان</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.address}
+                        onChange={handleChange}
+                        name="address"
+                        required
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label">المدينة</label>
+                      <select
+                        className="form-control"
+                        value={formData.city}
+                        onChange={handleChange}
+                        name="city"
+                        required
+                      >
+                        <option value="" disabled>
+                          اختر المدينة
+                        </option>
+                        <option value="عمان">عمان</option>
+                        <option value="إربد">إربد</option>
+                        <option value="زرقاء">الزرقاء</option>
+                        <option value="جرش">جرش</option>
+                        <option value="المفرق">المفرق</option>
+                        <option value="العقبة">العقبة</option>
+                        <option value="معان">معان</option>
+                        <option value="السلط">السلط</option>
+                        <option value="مادبا">مادبا</option>
+                        <option value="الكرك">الكرك</option>
+                        <option value="الطفيلة">الطفيلة</option>
+                        <option value="البلقاء">البلقاء</option>
+                        <option value="عجلون">عجلون</option>
+                      </select>
+                    </div>
+                  </div>
+                </form>
+              </div>
               )}
 
               <div className="payment-method mt-4">
@@ -391,7 +400,11 @@ const Checkout = () => {
                           <td>
                             {cart.product?.product_name || cart.product_name}
                           </td>
-                          <td className="text-end">{cart.quantity} كيلو</td>
+                          <td className="text-end">
+                              {cart.weight
+                                ? `${cart.weight} كيلو`
+                                : `${cart.quantity} قطعة`}
+                          </td>
                           <td className="text-end">
                             {cart.product?.product_price || cart.product_price}{" "}
                             د.أ
@@ -400,7 +413,7 @@ const Checkout = () => {
                       ))}
                       <tr>
                         <td>رسوم التوصيل</td>
-                        <td className="text-end">7 د.أ</td>
+                        <td className="text-end">5 د.أ</td>
                       </tr>
                       <tr>
                         <th>المجموع الفرعي</th>
@@ -426,7 +439,7 @@ const Checkout = () => {
                                 cart.product_price) *
                                 cart.quantity
                             );
-                          }, 0) + 7}{" "}
+                          }, 0) + 5}{" "}
                           د.أ
                         </td>
                       </tr>

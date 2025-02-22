@@ -111,8 +111,22 @@ const Menu = () => {
                         {product.product_name}
                       </span>
                       <span className="product-price">
-                        {product.product_price} د.أ / كيلو
-                      </span>
+                            <p className="product-price">
+                              {" "}
+                              <span className="product-price">
+                                {product.offers ? (
+                                  <>
+                                    <del style={{ color: "#000" }}>
+                                      {product.product_price}
+                                    </del>{" "}
+                                    {product.offers} د.أ / كيلو
+                                  </>
+                                ) : (
+                                  <>{product.product_price} د.أ / كيلو</>
+                                )}
+                              </span>
+                            </p>
+                          </span>
                     </div>
                   
                     <button

@@ -2,13 +2,13 @@ import React, { useEffect, useState } from "react";
 import "../assets/css/style.css";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Link } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const Details = () => {
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [quantity, setQuantity] = useState(1);
+  const [selectedWeight, setSelectedWeight] = useState(null); // تخزين الوزن المختار
   const location = useLocation();
 
   const queryParams = new URLSearchParams(location.search);
@@ -19,7 +19,6 @@ const Details = () => {
       .get(`http://127.0.0.1:8000/api/products?product_id=${product_id}`)
       .then((response) => {
         setProduct(response.data.products[0]);
-
         return axios.get(
           `http://127.0.0.1:8000/api/products?category=${response.data.products[0].item}`
         );
@@ -41,38 +40,38 @@ const Details = () => {
 
   const handleAddToCart = () => {
     const token = localStorage.getItem("token");
-  
+
     const cartItem = {
       product_id: product_id,
       quantity: quantity,
       product_name: product.product_name,
       product_image: product.product_image,
       product_price: product.product_price,
+      weight: selectedWeight,
     };
-  
+
     if (!token) {
       let cart = JSON.parse(sessionStorage.getItem("cart")) || [];
-      
-      const existingProductIndex = cart.findIndex(item => item.product_id === product_id);
-      
+
+      const existingProductIndex = cart.findIndex(
+        (item) =>
+          item.product_id === product_id && item.weight === selectedWeight
+      );
+
       if (existingProductIndex !== -1) {
         cart[existingProductIndex].quantity += quantity;
       } else {
         cart.push(cartItem);
       }
-  
+
       sessionStorage.setItem("cart", JSON.stringify(cart));
-  
       return;
     }
-  
+
     axios
       .post(
         "http://127.0.0.1:8000/api/addToCartUsersSide",
-        {
-          product_id: product_id,
-          quantity: quantity,
-        },
+        { ...cartItem },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -80,14 +79,11 @@ const Details = () => {
           },
         }
       )
-      .then((response) => {
-      })
+      .then(() => {})
       .catch((error) => {
         console.error("Error adding to cart:", error);
       });
   };
-  
-  
 
   return (
     <>
@@ -132,13 +128,27 @@ const Details = () => {
                             </span>
                           </p>
                           <div className="mt-4 d-flex align-items-center gap-3">
-                            <button className="add-to-kilo-details">
-                              1000 جرام
-                            </button>
-                            <button className="add-to-kilo-details">
-                              2000 جرام
-                            </button>
+                            {product.weight ? (
+                              [...Array(parseInt(product.weight))].map(
+                                (_, index) => (
+                                  <button
+                                    key={index}
+                                    className={`add-to-kilo-details ${
+                                      selectedWeight === index + 1
+                                        ? "selected"
+                                        : ""
+                                    }`}
+                                    onClick={() => setSelectedWeight(index + 1)}
+                                  >
+                                    {index + 1} كيلو
+                                  </button>
+                                )
+                              )
+                            ) : (
+                              <p>لا يوجد أوزان متاحة لأنها تباع بالقطعة</p>
+                            )}
                           </div>
+
                           <div className="mt-4 d-flex align-items-center gap-3">
                             <div
                               style={{
@@ -207,24 +217,7 @@ const Details = () => {
               <br />
               <br />
               <div className="container">
-                <div
-                  style={{
-                    textAlign: "center",
-                    color: "#5d4037",
-                    marginBottom: "30px",
-                  }}
-                >
-                  <h2 style={{ fontFamily: "'Lemonada', serif" }}>
-                    منتجات ذات صلة
-                  </h2>
-                  <span
-                    style={{
-                      display: "block",
-                      color: "#795548",
-                      textAlign: "center",
-                    }}
-                  ></span>
-                </div>
+                <h2 className="text-center">منتجات ذات صلة</h2>
                 <div className="products-grid">
                   {relatedProducts.length > 0 ? (
                     relatedProducts.map((product) => (
@@ -237,25 +230,30 @@ const Details = () => {
                           />
                         </div>
                         <div className="product-info">
-                          <div className="product-header">
-                            <span className="product-name">
-                              {product.product_name}
-                            </span>
-                            <span className="product-price">
-                              {product.product_price} د.أ / كيلو
-                            </span>
-                          </div>
-                          <button
-                            onClick={handleAddToCart}
-                            className="add-to-cart"
-                          >
-                            إضافة للسلة
-                          </button>
-                          <br />
+                          <span className="product-name">
+                            {product.product_name}
+                          </span>
+                          <span className="product-price">
+                            <p className="product-price">
+                              {" "}
+                              <span className="product-price">
+                                {product.offers ? (
+                                  <>
+                                    <del style={{ color: "#000" }}>
+                                      {product.product_price}
+                                    </del>{" "}
+                                    {product.offers} د.أ / كيلو
+                                  </>
+                                ) : (
+                                  <>{product.product_price} د.أ / كيلو</>
+                                )}
+                              </span>
+                            </p>
+                          </span>
+                          
                           <Link
                             to={`/details?product_id=${product.product_id}`}
                             className="btn-details"
-                            key={product.product_id}
                           >
                             عرض التفاصيل
                           </Link>

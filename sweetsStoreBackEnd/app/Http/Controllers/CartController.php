@@ -130,6 +130,7 @@ class CartController extends Controller
         try {
             $product_id = $request->input('product_id');
             $quantity = $request->input('quantity', 1);
+            $weight = $request->input('weight', null);
 
             $product = Product::find($product_id);
             if (!$product) {
@@ -144,6 +145,7 @@ class CartController extends Controller
 
                 $cartItem = Cart::where('product_id', $product_id)
                     ->where('user_id', $user_id)
+                    ->where('weight', $weight)
                     ->first();
 
                 if ($cartItem) {
@@ -154,18 +156,22 @@ class CartController extends Controller
                         'user_id' => $user_id,
                         'product_id' => $product_id,
                         'quantity' => $quantity,
+                        'weight' => $weight,
                         'created_at' => Carbon::now(),
                     ]);
                 }
             } else {
                 $cart = session()->get('cart', []);
 
-                if (isset($cart[$product_id])) {
-                    $cart[$product_id]['quantity'] += $quantity;
+                $cartKey = $product_id . '-' . $weight;
+
+                if (isset($cart[$cartKey])) {
+                    $cart[$cartKey]['quantity'] += $quantity;
                 } else {
-                    $cart[$product_id] = [
+                    $cart[$cartKey] = [
                         'product_id' => $product_id,
                         'quantity' => $quantity,
+                        'weight' => $weight,
                     ];
                 }
 
@@ -177,7 +183,6 @@ class CartController extends Controller
                 'message' => 'Product added to cart successfully.',
             ]);
         } catch (\Exception $e) {
-            // إذا حدث استثناء في المعالجة، يتم إرجاع رسالة الخطأ
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while adding the product to the cart.',

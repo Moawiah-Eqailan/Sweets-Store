@@ -102,20 +102,20 @@ class OrderController extends Controller
     public function order(Request $request)
     {
         $request->validate([
-            'user_id' => 'nullable|integer', 
+            'user_id' => 'nullable|integer',
             'total_product' => 'required|integer',
             'total_price' => 'required|numeric',
             'checkout_num' => 'required|string',
         ]);
-    
+
         $order = Order::create([
-            'user_id' => $request->input('user_id'), 
+            'user_id' => $request->input('user_id'),
             'total_product' => $request->input('total_product'),
             'total_price' => $request->input('total_price'),
             'checkout_num' => $request->input('checkout_num'),
             'status' => 'pending',
         ]);
-    
+
         return response()->json([
             'status' => 200,
             'message' => 'تم تأكيد الطلب بنجاح!',
@@ -123,29 +123,31 @@ class OrderController extends Controller
         ]);
     }
 
-    public function usersDetails(Request $request)
+    public function usersOrderItem(Request $request)
     {
         $request->validate([
-            'name' => 'required|string', 
-            'email' => 'required|email', 
-            'phone' => 'required|string',
-            'city' => 'required|string', 
-            'address' => 'required|string', 
-            'order_id' => 'required|integer',
+            'user_id'   => 'required|integer',
+            'checkout_num'   => 'required|string',
+            'order_id'  => 'required|integer',
+            'product_id' => 'required|integer',
+            'quantity'  => 'required|integer',
+            'price'     => 'required|numeric',
+            'weight'    => 'required|numeric',
         ]);
-    
+
         $orderItem = OrderItem::create([
-            'order_id' => $request->input('order_id'), 
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'phone' => $request->input('phone'),
-            'city' => $request->input('city'),
-            'address' => $request->input('address'),
+            'user_id'    => $request->input('user_id'),
+            'checkout_num' => $request->input('checkout_num'),
+            'order_id'   => $request->input('order_id'),
+            'product_id' => $request->input('product_id'),
+            'quantity'   => $request->input('quantity'),
+            'price'      => $request->input('price'),
+            'weight'     => $request->input('weight'),
         ]);
-    
+
         return response()->json([
-            'status' => 200,
-            'message' => 'تم حفظ بيانات المستخدم بنجاح!',
+            'status'     => 200,
+            'message'    => 'تم حفظ المنتج في الطلب بنجاح!',
             'order_item' => $orderItem,
         ]);
     }
@@ -153,13 +155,13 @@ class OrderController extends Controller
 
 
     public function getUserOrders(Request $request)
-{
-    $userId = $request->query('user_id');
+    {
+        $userId = $request->query('user_id');
 
-    $orders = Order::where('user_id', $userId)->get();
+        $orders = Order::where('user_id', $userId)->get();
 
-    return response()->json([
-        'orders' => $orders,
-    ]);
-}
+        return response()->json([
+            'orders' => $orders,
+        ]);
+    }
 }

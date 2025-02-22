@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderDeliveryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,5 +82,10 @@ Route::get('topProducts', [CartController::class, 'topProducts']);
 
 
 Route::post('order', [OrderController::class, 'order']);
-Route::post('usersDetails', [OrderController::class, 'usersDetails']);
+Route::post('usersOrderItem', [OrderController::class, 'usersOrderItem']);
 Route::get('/user-orders', [OrderController::class, 'getUserOrders']);
+
+
+
+
+Route::post('/orderDelivery', [OrderDeliveryController::class, 'store']);

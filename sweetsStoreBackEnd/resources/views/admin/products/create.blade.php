@@ -16,19 +16,16 @@
                 @csrf
 
 
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-tag me-2"></i>
+                        اسم المنتج
+                    </label>
+                    <input type="text" name="product_name" class="form-control" placeholder="Enter product name..."
+                        value="{{ old('product_name') }}" required>
+                </div>
 
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-tag me-2"></i>
-                                اسم المنتج
-                            </label>
-                            <input type="text" name="product_name" class="form-control"
-                                placeholder="Enter product name..." value="{{ old('product_name') }}" required>
-                        </div>
-                    </div>
-
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="form-label">
@@ -41,22 +38,65 @@
                                 step="0.01">
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-info-circle me-2" ></i>
+                                السعر بعد الخصم
+                            </label>
+                            <input type="number" name="offers" class="form-control" placeholder="Enter offers price..."
+                                value="{{ old('offers') }}" min="0" step="0.01">
+                        </div>
+                    </div>
+
+
                 </div>
 
 
 
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-tag me-2" style="margin: 8px;"></i>
+                                اختر الفئة
+                            </label>
+                            <select name="category_id" id="category_id" class="form-input" required>
+                                <option value="" disabled selected>اختر الفئة</option>
+                                @foreach ($categories as $id => $name)
+                                    <option value="{{ $id }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-weight me-2" style="margin: 8px;"></i>
+                                اختر الوزن (بالكيلو)
+                            </label>
+                            <select name="weight" id="weight" class="form-input" required>
+                                <option value="" disabled selected>اختر الوزن</option>
+                                <option value="1">1 كيلو</option>
+                                <option value="2">2 كيلو</option>
+                                <option value="3">3 كيلو</option>
+                                <option value="4">4 كيلو</option>
+                            </select>
+                        </div>
+                    </div>
 
+                </div>
                 <div class="form-group">
                     <label class="form-label">
-                        <i class="fas fa-tag me-2" style="margin: 8px;"></i>
-                        اختر الفئة
+                        <i class="fas fa-weight me-2" style="margin: 8px;"></i>
+                        Sub category
                     </label>
-                    <select name="category_id" id="category_id" class="form-input" required>
+                    <select name="item_id" id="item_id" class="form-input" >
                         <option value="" disabled selected>اختر الفئة</option>
-                        @foreach ($categories as $id => $name)
+                        @foreach ($item as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
-                    </select>
+                    </select> 
                 </div>
                 <div class="form-group">
                     <label class="form-label">
@@ -65,44 +105,6 @@
                     </label>
                     <textarea name="description" class="form-input" placeholder="Enter description..." rows="3">{{ old('description') }}</textarea>
                 </div>
-
-
-
-
-                
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-info-circle me-2" style="margin: 8px;"></i>
-                                السعر بعد الخصم
-                            </label>
-                            <input type="number" name="offers" class="form-control" placeholder="Enter offers price..."
-                                value="{{ old('offers') }}" min="0" step="0.01">
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <i class="fas fa-info-circle me-2" style="margin: 8px;"></i>
-                                الكمية
-                            </label>
-                            <input type="number" name="offers" class="form-control" placeholder="Enter offers price..."
-                                value="{{ old('offers') }}" min="0" step="0.01">
-                        </div>
-                    </div>
-                </div>
-
-
-               
-
-
-
-
-
-
-
 
                 <div class="form-group">
                     <label class="form-label">

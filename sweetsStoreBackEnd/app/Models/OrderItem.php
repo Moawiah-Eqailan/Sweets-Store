@@ -8,16 +8,17 @@ class OrderItem extends Model
 {
     protected $fillable = [
         'user_id' ,
-        'name' ,
-        'email' ,
-        'phone' ,
-        'city' ,
-        'address',
+        'checkout_num' ,
+        'order_id ' ,
+        'product_id' ,
+        'quantity' ,
+        'price',
+        'weight',
     ];
 
-    public function item()
+    public function product()
     {
-        return $this->belongsTo(Item::class);
+        return $this->belongsTo(Product::class);
     }
 
     public function order()

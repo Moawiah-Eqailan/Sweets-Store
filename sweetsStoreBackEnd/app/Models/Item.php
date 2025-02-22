@@ -15,14 +15,11 @@ class Item extends Model
     protected $fillable = [
         'item_name',
         'category_id',
+        'product_id',
         'item_image',
     ];
   
-    public function favorites()
-    {
-        return $this->belongsToMany(User::class, 'favorites', 'item_id', 'user_id');
-    }
-
+ 
     public function users()
     {
         return $this->belongsToMany(User::class, 'favorites', 'item_id', 'user_id');

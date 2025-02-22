@@ -120,7 +120,12 @@ const Cart = () => {
                         <span>{cart.product_name}</span>
                       )}
                     </div>
-                    <span>{cart.quantity} كيلو</span>
+                    <span className="fw-bold">
+                      {cart.weight
+                        ? `${cart.weight} كيلو`
+                        : `${cart.quantity} قطعة`}
+                    </span>
+
                     <span className="fw-bold">
                       {isLoggedIn
                         ? cart.product?.product_price
@@ -145,7 +150,9 @@ const Cart = () => {
                   </div>
                 ))
               ) : (
-                <p style={{textAlign:"center" , margin:'12px'}}>لا توجد عناصر في السلة.</p>
+                <p style={{ textAlign: "center", margin: "12px" }}>
+                  لا توجد عناصر في السلة.
+                </p>
               )}
             </div>
           </div>
@@ -188,9 +195,12 @@ const Cart = () => {
                 >
                   استمرار التسوق
                 </button>
-                <Link to="/checkout" className="btn btn-primary flex-grow-1">
-                  الدفع
-                </Link>
+
+                {cartItems.length > 0 && (
+                  <Link to="/checkout" className="btn btn-primary flex-grow-1">
+                    الدفع
+                  </Link>
+                )}
               </div>
             </div>
           </div>

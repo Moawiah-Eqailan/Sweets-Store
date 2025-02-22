@@ -43,26 +43,46 @@ const Header = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("user"); 
-    localStorage.removeItem("token"); 
-    setIsLoggedIn(false); 
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
   };
 
   return (
-    <header className="header-top" style={{ position: "sticky", top: 0, zIndex: 999 }} dir="rtl">
+    <header
+      className="header-top"
+      style={{ position: "sticky", top: 0, zIndex: 999 }}
+      dir="rtl"
+    >
       <div className="container">
         <div className="row align-items-center">
           <div className="col-md-4">
             <div className="social-icons d-flex gap-3 justify-content-center justify-content-md-start">
-              <Link to="https://www.facebook.com/" className="facebook"><FaFacebook size={18} /></Link>
-              <Link to="https://www.instagram.com/" className="instagram"><FaInstagram size={18} /></Link>
-              <Link to="/Users"><i className="fa-regular fa-user"></i></Link>
+              <Link to="https://www.facebook.com/" className="facebook">
+                <FaFacebook size={18} />
+              </Link>
+              <Link to="https://www.instagram.com/" className="instagram">
+                <FaInstagram size={18} />
+              </Link>
+              {isLoggedIn && (
+                <Link to="/Users">
+                  <i className="fa-regular fa-user"></i>
+                </Link>
+              )}
             </div>
           </div>
           <div className="col-md-4 text-center">
             <Link to="/" className="logo">
-              <h2 className="display-5" style={{ fontFamily: " 'Cairo', sans-serif" }}>
-                <img width={"100px"} src={logo} alt="Sweets Store Logo" className="img-fluid" />
+              <h2
+                className="display-5"
+                style={{ fontFamily: " 'Cairo', sans-serif" }}
+              >
+                <img
+                  width={"100px"}
+                  src={logo}
+                  alt="Sweets Store Logo"
+                  className="img-fluid"
+                />
               </h2>
             </Link>
           </div>
@@ -73,11 +93,20 @@ const Header = () => {
                 <span className="cart-count">{cartCount}</span>
               </Link>
               {isLoggedIn ? (
-                <button onClick={handleLogout} className="icon-link cart-icon btn btn-link">تسجيل الخروج</button>
+                <button
+                  onClick={handleLogout}
+                  className="icon-link cart-icon btn btn-link"
+                >
+                  تسجيل الخروج
+                </button>
               ) : (
                 <>
-                  <Link to="/Login" className="icon-link cart-icon">تسجيل الدخول</Link>
-                  <Link to="/register" className="icon-link cart-icon">انشاء حساب</Link>
+                  <Link to="/Login" className="icon-link cart-icon">
+                    تسجيل الدخول
+                  </Link>
+                  <Link to="/register" className="icon-link cart-icon">
+                    انشاء حساب
+                  </Link>
                 </>
               )}
             </div>

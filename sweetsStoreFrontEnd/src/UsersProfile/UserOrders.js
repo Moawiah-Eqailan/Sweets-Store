@@ -44,37 +44,45 @@ const UserOrders = () => {
         </div>
 
         <div>
-          <div>
-            <div className="usersProfile">
-              <div className="product-info" style={{ padding: "20px" }}>
-                {orders.length > 0 ? (
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>رقم الطلب</th>
-                        <th>التاريخ</th>
-                        <th>حالة الطلب</th>
-                        <th>المجموع</th>
+          <div className="usersProfile">
+            <div className="product-info" style={{ padding: "20px" }}>
+              {orders.length > 0 ? (
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>رقم الطلب</th>
+                      <th>التاريخ</th>
+                      <th>حالة الطلب</th>
+                      <th>المجموع</th>
+                      <th>المنتجات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id}>
+                        <td>{order.checkout_num}</td>
+                        <td>{new Date(order.created_at).toLocaleDateString()}</td>
+                        <td>{order.status}</td>
+                        <td>{order.total_price} د.أ</td>
+                        <td>{order.total_product}</td>
+                        <td>
+                          <ul>
+                            {order.order_items?.map((order_items, index) => (
+                              <li key={index}>
+                                {order_items.id} - {order_items.name} × {order_items.order_id} د.أ
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((order) => (
-                        <tr key={order.id}>
-                          <td>{order.checkout_num}</td>
-                          <td>{new Date(order.created_at).toLocaleDateString()}</td>
-                          <td>{order.status}</td>
-                          <td>{order.total_price} د.أ</td>
-                          
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div style={{ textAlign: "center", padding: "20px" }}>
-                    <p>لا توجد طلبات لعرضها.</p>
-                  </div>
-                )}
-              </div>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{ textAlign: "center", padding: "20px" }}>
+                  <p>لا توجد طلبات لعرضها.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -32,8 +32,9 @@ class ProductController extends Controller
     public function create()
     {
         $categories = Category::pluck('category_name', 'category_id');
+        $item = Item::pluck('item_name', 'id');
 
-        return view('Admin.products.create', compact('categories'));
+        return view('Admin.products.create', compact('categories','item'));
     }
 
     /**
@@ -46,8 +47,10 @@ class ProductController extends Controller
             'description' => 'required|string|max:255',
             'product_price' => 'required|string|max:255',
             'offers' => 'required|string|max:255',
+            'weight' => 'required|string|max:255',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'category_id' => 'required|integer',
+            'item_id' => 'required|integer',
         ]);
 
         if ($request->hasFile('image')) {
@@ -112,6 +115,7 @@ class ProductController extends Controller
             'description' => $request->description,
             'product_price' => $request->product_price,
             'offers' => $request->offers,
+            'weight' => $request->weight,
             'product_image' => $imagePath,
         ]);
 
