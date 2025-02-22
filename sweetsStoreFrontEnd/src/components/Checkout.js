@@ -24,8 +24,8 @@ const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
 
   const generateOrderNumber = (userId) => {
-    const randomNumbers = Math.floor(Math.random() * 1000 + 1); 
-    return `${userId}${randomNumbers}`; 
+    const randomNumbers = Math.floor(Math.random() * 1000 + 1);
+    return `${userId}${randomNumbers}`;
   };
 
   useEffect(() => {
@@ -125,11 +125,10 @@ const Checkout = () => {
       );
     }
   };
-
   const handleConfirmOrder = async () => {
     const userData = JSON.parse(localStorage.getItem("user"));
     const isLoggedIn = !!userData;
-  
+
     if (
       !isLoggedIn &&
       (!formData.name ||
@@ -145,29 +144,28 @@ const Checkout = () => {
       });
       return;
     }
-  
+
     try {
       const orderNumber = generateOrderNumber(userData?.id || "GUEST");
-  
       const orderData = {
         user_id: isLoggedIn ? userData.id : null,
         checkout_num: orderNumber,
         total_product: cartItems.length,
         total_price:
           cartItems.reduce((total, cart) => {
-            return (
-              total +
-              (cart.product?.product_price || cart.product_price) * cart.quantity
-            );
+            const price =
+              cart.product?.offers ||
+              cart.product?.product_price ||
+              cart.product_price;
+            return total + price * cart.quantity;
           }, 0) + 5,
         status: "pending",
       };
-  
       const orderResponse = await axios.post(
         "http://127.0.0.1:8000/api/order",
         orderData
       );
-  
+
       if (orderResponse.status === 200) {
         for (const cartItem of cartItems) {
           await axios.post("http://127.0.0.1:8000/api/usersOrderItem", {
@@ -176,11 +174,14 @@ const Checkout = () => {
             order_id: orderResponse.data.order.id,
             product_id: cartItem.product_id || cartItem.id,
             quantity: cartItem.quantity,
-            price: cartItem.product?.product_price || cartItem.product_price,
+            price:
+              cartItem.product?.offers ||
+              cartItem.product?.product_price ||
+              cartItem.product_price,
             weight: cartItem.weight || null,
           });
         }
-  
+
         const deliveryData = {
           checkout_num: orderNumber,
           total_price: orderData.total_price,
@@ -190,15 +191,18 @@ const Checkout = () => {
           address: formData.address,
           city: formData.city,
         };
-  
-        await axios.post("http://127.0.0.1:8000/api/orderDelivery", deliveryData);
-  
+
+        await axios.post(
+          "http://127.0.0.1:8000/api/orderDelivery",
+          deliveryData
+        );
+
         Swal.fire({
           icon: "success",
           title: "تم تأكيد الطلب بنجاح",
           text: `طلبك قيد التحضير! رقم الطلب: ${orderNumber}`,
         });
-  
+
         if (isLoggedIn) {
           await axios.post("http://127.0.0.1:8000/api/clearCartUsersSide", {
             user_id: userData.id,
@@ -206,7 +210,7 @@ const Checkout = () => {
         } else {
           sessionStorage.removeItem("cart");
         }
-  
+
         navigate("/");
       }
     } catch (error) {
@@ -284,83 +288,83 @@ const Checkout = () => {
                 </div>
               ) : (
                 <div className="bg-white p-4 rounded-3 shadow-sm">
-                <h4 className="mb-4">بيانات المستخدم</h4>
-                <form>
-                  <div className="row g-3">
-                    <div className="col-12">
-                      <label className="form-label">الاسم الكامل</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.name}
-                        onChange={handleChange}
-                        name="name"
-                        required
-                      />
+                  <h4 className="mb-4">بيانات المستخدم</h4>
+                  <form>
+                    <div className="row g-3">
+                      <div className="col-12">
+                        <label className="form-label">الاسم الكامل</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={formData.name}
+                          onChange={handleChange}
+                          name="name"
+                          required
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">البريد الإلكتروني</label>
+                        <input
+                          type="email"
+                          className="form-control"
+                          value={formData.email}
+                          onChange={handleChange}
+                          name="email"
+                          required
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">رقم الهاتف</label>
+                        <input
+                          type="tel"
+                          className="form-control"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          name="phone"
+                          required
+                        />
+                      </div>
+                      <div className="col-12">
+                        <label className="form-label">العنوان</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={formData.address}
+                          onChange={handleChange}
+                          name="address"
+                          required
+                        />
+                      </div>
+                      <div className="col-12">
+                        <label className="form-label">المدينة</label>
+                        <select
+                          className="form-control"
+                          value={formData.city}
+                          onChange={handleChange}
+                          name="city"
+                          required
+                        >
+                          <option value="" disabled>
+                            اختر المدينة
+                          </option>
+                          <option value="عمان">عمان</option>
+                          <option value="إربد">إربد</option>
+                          <option value="زرقاء">الزرقاء</option>
+                          <option value="جرش">جرش</option>
+                          <option value="المفرق">المفرق</option>
+                          <option value="العقبة">العقبة</option>
+                          <option value="معان">معان</option>
+                          <option value="السلط">السلط</option>
+                          <option value="مادبا">مادبا</option>
+                          <option value="الكرك">الكرك</option>
+                          <option value="الطفيلة">الطفيلة</option>
+                          <option value="البلقاء">البلقاء</option>
+                          <option value="عجلون">عجلون</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="col-md-6">
-                      <label className="form-label">البريد الإلكتروني</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        value={formData.email}
-                        onChange={handleChange}
-                        name="email"
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">رقم الهاتف</label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        name="phone"
-                        required
-                      />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">العنوان</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.address}
-                        onChange={handleChange}
-                        name="address"
-                        required
-                      />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">المدينة</label>
-                      <select
-                        className="form-control"
-                        value={formData.city}
-                        onChange={handleChange}
-                        name="city"
-                        required
-                      >
-                        <option value="" disabled>
-                          اختر المدينة
-                        </option>
-                        <option value="عمان">عمان</option>
-                        <option value="إربد">إربد</option>
-                        <option value="زرقاء">الزرقاء</option>
-                        <option value="جرش">جرش</option>
-                        <option value="المفرق">المفرق</option>
-                        <option value="العقبة">العقبة</option>
-                        <option value="معان">معان</option>
-                        <option value="السلط">السلط</option>
-                        <option value="مادبا">مادبا</option>
-                        <option value="الكرك">الكرك</option>
-                        <option value="الطفيلة">الطفيلة</option>
-                        <option value="البلقاء">البلقاء</option>
-                        <option value="عجلون">عجلون</option>
-                      </select>
-                    </div>
-                  </div>
-                </form>
-              </div>
+                  </form>
+                </div>
               )}
 
               <div className="payment-method mt-4">
@@ -401,12 +405,14 @@ const Checkout = () => {
                             {cart.product?.product_name || cart.product_name}
                           </td>
                           <td className="text-end">
-                              {cart.weight
-                                ? `${cart.weight} كيلو`
-                                : `${cart.quantity} قطعة`}
+                            {cart.weight
+                              ? `${cart.weight} كيلو`
+                              : `${cart.quantity} قطعة`}
                           </td>
                           <td className="text-end">
-                            {cart.product?.product_price || cart.product_price}{" "}
+                            {cart.product?.offers ||
+                              cart.product?.product_price ||
+                              cart.product_price}{" "}
                             د.أ
                           </td>
                         </tr>
@@ -419,12 +425,11 @@ const Checkout = () => {
                         <th>المجموع الفرعي</th>
                         <td className="text-end">
                           {cartItems.reduce((total, cart) => {
-                            return (
-                              total +
-                              (cart.product?.product_price ||
-                                cart.product_price) *
-                                cart.quantity
-                            );
+                            const price =
+                              cart.product?.offers ||
+                              cart.product?.product_price ||
+                              cart.product_price;
+                            return total + price * cart.quantity;
                           }, 0)}{" "}
                           د.أ
                         </td>
@@ -433,12 +438,11 @@ const Checkout = () => {
                         <th>الإجمالي</th>
                         <td className="text-end fw-bold">
                           {cartItems.reduce((total, cart) => {
-                            return (
-                              total +
-                              (cart.product?.product_price ||
-                                cart.product_price) *
-                                cart.quantity
-                            );
+                            const price =
+                              cart.product?.offers ||
+                              cart.product?.product_price ||
+                              cart.product_price;
+                            return total + price * cart.quantity;
                           }, 0) + 5}{" "}
                           د.أ
                         </td>
