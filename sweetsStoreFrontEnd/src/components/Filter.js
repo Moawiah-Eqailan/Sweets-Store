@@ -8,7 +8,7 @@ const SideBarPage = () => {
   const location = useLocation();
   console.log("Location State:", location.state);
   const products = location.state?.products || [];
-  const [quantity, setQuantity] = useState(1); 
+  const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = (product_id, product) => {
     const token = localStorage.getItem("token");
@@ -16,48 +16,38 @@ const SideBarPage = () => {
     const cartItem = {
       product_id: product_id,
       quantity: quantity,
-      product_name: product.product_name,
-      product_image: product.product_image,
-      product_price: product.product_price,
     };
 
-    if (!token) {
-      let cart = JSON.parse(sessionStorage.getItem("cart")) || [];
-
-      const existingProductIndex = cart.findIndex(
-        (item) => item.product_id === product_id
-      );
-
-      if (existingProductIndex !== -1) {
-        cart[existingProductIndex].quantity += quantity;
-      } else {
-        cart.push(cartItem);
-      }
-
-      sessionStorage.setItem("cart", JSON.stringify(cart));
-
-      return;
+    if (token) {
+      axios
+        .post(
+          "http://127.0.0.1:8000/api/addToCartUsersSide",
+          cartItem,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
+    } else {
+      axios
+        .post("http://127.0.0.1:8000/api/addToCartUsersSide", cartItem)
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
     }
-
-    axios
-      .post(
-        "http://127.0.0.1:8000/api/addToCartUsersSide",
-        {
-          product_id: product_id,
-          quantity: quantity,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-      .then((response) => {
-      })
-      .catch((error) => {
-        console.error("Error adding to cart:", error);
-      });
   };
 
   return (
@@ -86,10 +76,18 @@ const SideBarPage = () => {
                         {product.product_name}
                       </span>
                       <span className="product-price">
-                        {product.product_price} د.أ / كيلو
+                        {product.offers ? (
+                          <>
+                            <del style={{ color: "#000" }}>
+                              {product.product_price}
+                            </del>{" "}
+                            {product.offers} د.أ / كيلو
+                          </>
+                        ) : (
+                          <>{product.product_price} د.أ / كيلو</>
+                        )}
                       </span>
                     </div>
-                    
                     <button
                       onClick={() => handleAddToCart(product.product_id, product)}
                       className="add-to-cart"
@@ -109,7 +107,7 @@ const SideBarPage = () => {
                 </div>
               ))
             ) : (
-              <h3 className="text-center"> جاري تحميل المنتجات ... </h3>
+              <h3 className="text-center">جاري تحميل المنتجات...</h3>
             )}
           </div>
         </div>

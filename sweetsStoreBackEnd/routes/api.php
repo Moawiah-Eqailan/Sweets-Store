@@ -84,6 +84,7 @@ Route::get('topProducts', [CartController::class, 'topProducts']);
 Route::post('order', [OrderController::class, 'order']);
 Route::post('usersOrderItem', [OrderController::class, 'usersOrderItem']);
 Route::get('/user-orders', [OrderController::class, 'getUserOrders']);
+Route::get('/getUserIp', [OrderController::class, 'getUserIp']);
 
 
 

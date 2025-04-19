@@ -5,16 +5,15 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const BestProducts = () => {
-  const [bestProducts, setBestProducts] = useState([]); 
+  const [bestProducts, setBestProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [cart, setCart] = useState([]);
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     axios
       .get("http://127.0.0.1:8000/api/topProducts")
       .then((response) => {
-        setBestProducts(response.data.top_products); 
+        setBestProducts(response.data.top_products);
       })
       .catch((error) => {
         console.error("Error fetching top products:", error);
@@ -41,48 +40,38 @@ const BestProducts = () => {
     const cartItem = {
       product_id: product_id,
       quantity: quantity,
-      product_name: product.product_name,
-      product_image: product.product_image,
-      product_price: product.product_price,
     };
 
-    if (!token) {
-      let cart = JSON.parse(sessionStorage.getItem("cart")) || [];
-
-      const existingProductIndex = cart.findIndex(
-        (item) => item.product_id === product_id
-      );
-
-      if (existingProductIndex !== -1) {
-        cart[existingProductIndex].quantity += quantity;
-      } else {
-        cart.push(cartItem);
-      }
-
-      sessionStorage.setItem("cart", JSON.stringify(cart));
-
-      return;
+    if (token) {
+      axios
+        .post(
+          "http://127.0.0.1:8000/api/addToCartUsersSide",
+          cartItem,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
+    } else {
+      axios
+        .post("http://127.0.0.1:8000/api/addToCartUsersSide", cartItem)
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
     }
-
-    axios
-      .post(
-        "http://127.0.0.1:8000/api/addToCartUsersSide",
-        {
-          product_id: product_id,
-          quantity: quantity,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-      .then((response) => {
-      })
-      .catch((error) => {
-        console.error("Error adding to cart:", error);
-      });
   };
 
   return (
@@ -100,7 +89,7 @@ const BestProducts = () => {
         <div className="container">
           <div className="row justify-content-center text-center">
             <div className="col-md-6">
-              <h2 className="category-title">مرحبا بكم </h2>
+              <h2 className="category-title">مرحبا بكم</h2>
               <p>
                 مخبزنا الحرفي مخصص لصنع الحلويات اللذيذة التي تسعد الحواس وتترك
                 انطباعًا دائمًا. اكتشف عالمًا من النكهات الرائعة والحرفية
@@ -145,7 +134,6 @@ const BestProducts = () => {
                       {product.product_price} د.أ / ك
                     </span>
                   </div>
-                  
                   <button
                     onClick={() => handleAddToCart(product.product_id, product)}
                     className="add-to-cart"

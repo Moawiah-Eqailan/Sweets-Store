@@ -13,7 +13,7 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [quantity, setQuantity] = useState(1); 
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (categoryId) {
@@ -47,56 +47,44 @@ const Products = () => {
       });
   }, [categoryId]);
 
-
   const handleAddToCart = (product_id, product) => {
     const token = localStorage.getItem("token");
 
     const cartItem = {
       product_id: product_id,
       quantity: quantity,
-      product_name: product.product_name,
-      product_image: product.product_image,
-      product_price: product.product_price,
     };
 
-    if (!token) {
-      let cart = JSON.parse(sessionStorage.getItem("cart")) || [];
-
-      const existingProductIndex = cart.findIndex(
-        (item) => item.product_id === product_id
-      );
-
-      if (existingProductIndex !== -1) {
-        cart[existingProductIndex].quantity += quantity;
-      } else {
-        cart.push(cartItem);
-      }
-
-      sessionStorage.setItem("cart", JSON.stringify(cart));
-
-      return;
+    if (token) {
+      axios
+        .post(
+          "http://127.0.0.1:8000/api/addToCartUsersSide",
+          cartItem,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
+    } else {
+      axios
+        .post("http://127.0.0.1:8000/api/addToCartUsersSide", cartItem)
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
     }
-
-    axios
-      .post(
-        "http://127.0.0.1:8000/api/addToCartUsersSide",
-        {
-          product_id: product_id,
-          quantity: quantity,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-      .then((response) => {
-      })
-      .catch((error) => {
-        alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
-        console.error("Error adding to cart:", error);
-      });
   };
 
   return (
@@ -113,14 +101,14 @@ const Products = () => {
         >
           {categories
             .filter(
-              (categories) => categories.category_id === parseInt(categoryId)
+              (category) => category.category_id === parseInt(categoryId)
             )
-            .map((categories) => (
+            .map((category) => (
               <h2
                 style={{ fontFamily: "'Lemonada', serif" }}
-                key={categories.category_id}
+                key={category.category_id}
               >
-                {categories.category_name}
+                {category.category_name}
               </h2>
             ))}
 
@@ -143,11 +131,11 @@ const Products = () => {
               <p className="error-text">{error}</p>
             ) : products.length > 0 ? (
               products.map((product) => (
-                <div key={product.id} className="product-card">
+                <div key={product.product_id} className="product-card">
                   <div className="product-image">
                     <img
                       src={product.product_image}
-                      alt=""
+                      alt={product.product_name}
                       style={{ objectFit: "contain" }}
                     />
                   </div>
@@ -169,7 +157,6 @@ const Products = () => {
                         )}
                       </span>
                     </div>
-               
                     <button
                       onClick={() => handleAddToCart(product.product_id, product)}
                       className="add-to-cart"
@@ -189,7 +176,7 @@ const Products = () => {
                 </div>
               ))
             ) : (
-              <h3 className="text-center">  جاري تحميل المنتجات ... </h3>
+              <h3 className="text-center">جاري تحميل المنتجات...</h3>
             )}
           </div>
         </div>

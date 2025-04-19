@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('order_delivery', function (Blueprint $table) {
             $table->id();
+            $table->string('user_ip')->nullable()->unique();
+            $table->integer('user_id')->nullable()->unique();
             $table->string('checkout_num'); 
             $table->decimal('total_price', 8, 2);
             $table->string('name'); 

@@ -22,15 +22,27 @@ const Checkout = () => {
   });
   const [error, setError] = useState("");
   const [cartItems, setCartItems] = useState([]);
+  const [userIp, setUserIp] = useState(null); 
 
   const generateOrderNumber = (userId) => {
     const randomNumbers = Math.floor(Math.random() * 1000 + 1);
-    return `${userId}${randomNumbers}`;
+    return `${userId || "GUEST"}${randomNumbers}`;
   };
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user"));
-
+  
+    axios
+      .get("http://127.0.0.1:8000/api/getUserIp")
+      .then((response) => {
+        setUserIp(response.data.user_ip);
+        
+        fetchCartItems(userData, response.data.user_ip);
+      })
+      .catch((error) => {
+        console.error("Error fetching user IP:", error);
+      });
+  
     if (userData) {
       setFormData({
         name: userData.name || "",
@@ -40,22 +52,23 @@ const Checkout = () => {
         city: userData.city || "",
       });
       setShowForm(true);
-
-      axios
-        .post("http://127.0.0.1:8000/api/CartUsersSide", {
-          user_id: userData.id,
-        })
-        .then((response) => {
-          setCartItems(response.data.cart);
-        })
-        .catch((error) => {
-          console.error("Error fetching cart items:", error);
-        });
-    } else {
-      const storedCart = JSON.parse(sessionStorage.getItem("cart")) || [];
-      setCartItems(storedCart);
     }
   }, []);
+  
+  const fetchCartItems = (userData, ip) => {
+    const requestData = userData 
+      ? { user_id: userData.id }
+      : { user_ip: ip };
+  
+    axios
+      .post("http://127.0.0.1:8000/api/CartUsersSide", requestData)
+      .then((response) => {
+        setCartItems(response.data.cart);
+      })
+      .catch((error) => {
+        console.error("Error fetching cart items:", error);
+      });
+  };
 
   const goBack = () => {
     navigate(-1);
@@ -107,6 +120,10 @@ const Checkout = () => {
         setShowForm(true);
         setShowLoginForm(false);
 
+        await axios.post("http://127.0.0.1:8000/api/transferCart", {
+          user_id: response.data.user.id,
+        });
+
         axios
           .post("http://127.0.0.1:8000/api/CartUsersSide", {
             user_id: response.data.user.id,
@@ -125,17 +142,17 @@ const Checkout = () => {
       );
     }
   };
+
   const handleConfirmOrder = async () => {
     const userData = JSON.parse(localStorage.getItem("user"));
     const isLoggedIn = !!userData;
 
     if (
-      !isLoggedIn &&
-      (!formData.name ||
-        !formData.email ||
-        !formData.phone ||
-        !formData.city ||
-        !formData.address)
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.city ||
+      !formData.address
     ) {
       Swal.fire({
         icon: "error",
@@ -145,22 +162,30 @@ const Checkout = () => {
       return;
     }
 
+    if (cartItems.length === 0) {
+      Swal.fire({
+        icon: "error",
+        title: "خطأ",
+        text: "السلة فارغة. يرجى إضافة منتجات قبل تأكيد الطلب.",
+      });
+      return;
+    }
+
     try {
       const orderNumber = generateOrderNumber(userData?.id || "GUEST");
       const orderData = {
         user_id: isLoggedIn ? userData.id : null,
+        user_ip: isLoggedIn ? null : userIp,
         checkout_num: orderNumber,
         total_product: cartItems.length,
         total_price:
           cartItems.reduce((total, cart) => {
-            const price =
-              cart.product?.offers ||
-              cart.product?.product_price ||
-              cart.product_price;
+            const price = cart.product?.offers || cart.product?.product_price;
             return total + price * cart.quantity;
           }, 0) + 5,
         status: "pending",
       };
+
       const orderResponse = await axios.post(
         "http://127.0.0.1:8000/api/order",
         orderData
@@ -170,19 +195,19 @@ const Checkout = () => {
         for (const cartItem of cartItems) {
           await axios.post("http://127.0.0.1:8000/api/usersOrderItem", {
             user_id: isLoggedIn ? userData.id : null,
+            user_ip: isLoggedIn ? null : userIp, 
             checkout_num: orderNumber,
             order_id: orderResponse.data.order.id,
-            product_id: cartItem.product_id || cartItem.id,
+            product_id: cartItem.product_id,
             quantity: cartItem.quantity,
-            price:
-              cartItem.product?.offers ||
-              cartItem.product?.product_price ||
-              cartItem.product_price,
+            price: cartItem.product?.offers || cartItem.product?.product_price,
             weight: cartItem.weight || null,
           });
         }
 
         const deliveryData = {
+          user_id: isLoggedIn ? userData.id : null,
+          user_ip: isLoggedIn ? null : userIp, 
           checkout_num: orderNumber,
           total_price: orderData.total_price,
           name: formData.name,
@@ -197,19 +222,19 @@ const Checkout = () => {
           deliveryData
         );
 
-        Swal.fire({
-          icon: "success",
-          title: "تم تأكيد الطلب بنجاح",
-          text: `طلبك قيد التحضير! رقم الطلب: ${orderNumber}`,
-        });
-
         if (isLoggedIn) {
           await axios.post("http://127.0.0.1:8000/api/clearCartUsersSide", {
             user_id: userData.id,
           });
         } else {
-          sessionStorage.removeItem("cart");
+          await axios.post("http://127.0.0.1:8000/api/clearCartUsersSide");
         }
+
+        Swal.fire({
+          icon: "success",
+          title: "تم تأكيد الطلب بنجاح",
+          text: `طلبك قيد التحضير! رقم الطلب: ${orderNumber}`,
+        });
 
         navigate("/");
       }
@@ -222,6 +247,7 @@ const Checkout = () => {
       });
     }
   };
+
   return (
     <>
       <section className="checkout-section py-5">
@@ -397,22 +423,15 @@ const Checkout = () => {
                     </tbody>
                     <tbody>
                       {cartItems.map((cart) => (
-                        <tr
-                          key={cart.product_id || cart.id}
-                          className="border-bottom"
-                        >
-                          <td>
-                            {cart.product?.product_name || cart.product_name}
-                          </td>
+                        <tr key={cart.id} className="border-bottom">
+                          <td>{cart.product?.product_name}</td>
                           <td className="text-end">
                             {cart.weight
                               ? `${cart.weight} كيلو`
                               : `${cart.quantity} قطعة`}
                           </td>
                           <td className="text-end">
-                            {cart.product?.offers ||
-                              cart.product?.product_price ||
-                              cart.product_price}{" "}
+                            {cart.product?.offers || cart.product?.product_price}{" "}
                             د.أ
                           </td>
                         </tr>
@@ -426,9 +445,7 @@ const Checkout = () => {
                         <td className="text-end">
                           {cartItems.reduce((total, cart) => {
                             const price =
-                              cart.product?.offers ||
-                              cart.product?.product_price ||
-                              cart.product_price;
+                              cart.product?.offers || cart.product?.product_price;
                             return total + price * cart.quantity;
                           }, 0)}{" "}
                           د.أ
@@ -439,9 +456,7 @@ const Checkout = () => {
                         <td className="text-end fw-bold">
                           {cartItems.reduce((total, cart) => {
                             const price =
-                              cart.product?.offers ||
-                              cart.product?.product_price ||
-                              cart.product_price;
+                              cart.product?.offers || cart.product?.product_price;
                             return total + price * cart.quantity;
                           }, 0) + 5}{" "}
                           د.أ

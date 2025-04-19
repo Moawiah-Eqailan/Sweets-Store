@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 
 const Offers = () => {
   const [products, setProducts] = useState([]);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     axios
@@ -21,6 +22,46 @@ const Offers = () => {
         console.error("Error fetching products:", error);
       });
   }, []);
+
+  const handleAddToCart = (product_id) => {
+    const token = localStorage.getItem("token");
+
+    const cartItem = {
+      product_id: product_id,
+      quantity: quantity,
+    };
+
+    if (token) {
+      axios
+        .post(
+          "http://127.0.0.1:8000/api/addToCartUsersSide",
+          cartItem,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
+    } else {
+      axios
+        .post("http://127.0.0.1:8000/api/addToCartUsersSide", cartItem)
+        .then((response) => {
+          alert("تم إضافة المنتج إلى السلة!");
+        })
+        .catch((error) => {
+          console.error("Error adding to cart:", error);
+          alert("حدث خطأ أثناء إضافة المنتج إلى السلة!");
+        });
+    }
+  };
 
   return (
     <>
@@ -66,12 +107,13 @@ const Offers = () => {
                         {product.offers} د.أ / كيلو
                       </span>
                     </div>
-                    <Link to="/cart">
-                      <button className="add-to-cart">
-                        <i className="fa-solid fa-cart-shopping"></i>
-                        <span>أضف إلى السلة</span>
-                      </button>
-                    </Link>
+                    <button
+                      onClick={() => handleAddToCart(product.product_id)}
+                      className="add-to-cart"
+                    >
+                      <i className="fa-solid fa-cart-shopping"></i>
+                      <span>أضف إلى السلة</span>
+                    </button>
                     <br />
                     <Link
                       to={`/details?product_id=${product.product_id}`}
@@ -84,7 +126,7 @@ const Offers = () => {
                 </div>
               ))
             ) : (
-              <h3 className="text-center"> جاري تحميل المنتجات ... </h3>
+              <h3 className="text-center">جاري تحميل المنتجات...</h3>
             )}
           </div>
         </div>

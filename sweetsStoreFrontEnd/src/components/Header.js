@@ -11,6 +11,30 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
+  const fetchCartCount = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      let response;
+
+      if (isLoggedIn && user?.id) {
+        response = await axios.post("http://127.0.0.1:8000/api/CartUsersSide", {
+          user_id: user.id,
+        });
+      } else {
+        response = await axios.post("http://127.0.0.1:8000/api/CartUsersSide");
+      }
+
+      const cartItems = response.data.cart || [];
+      const totalItems = cartItems.reduce(
+        (total, item) => total + item.quantity,
+        0
+      );
+      setCartCount(totalItems);
+    } catch (error) {
+      console.error("Error fetching cart count:", error);
+    }
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem("user");
     const token = localStorage.getItem("token");
@@ -30,22 +54,18 @@ const Header = () => {
         console.error("Error fetching categories:", error);
       });
 
-    const fetchCartCount = async () => {
-      try {
-        const response = await axios.get("http://127.0.0.1:8000/api/cart");
-        setCartCount(response.data.total_items || 0);
-      } catch (error) {
-        console.error("Error fetching cart count:", error);
-      }
-    };
-
     fetchCartCount();
-  }, []);
+
+    const intervalId = setInterval(fetchCartCount, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [isLoggedIn]); 
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     setIsLoggedIn(false);
+    setCartCount(0); 
   };
 
   return (

@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Models\User;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class RegisterUserIp
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        $userIp = $request->ip();
+
+        $user = User::where('user_ip', $userIp)->first();
+
+        if (!$user) {
+            User::create([
+                'user_ip' => $userIp,
+            ]);
+        }
+
+        return $next($request);
+    }
+}

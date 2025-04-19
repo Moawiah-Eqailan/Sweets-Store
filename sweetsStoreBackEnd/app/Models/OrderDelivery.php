@@ -15,6 +15,8 @@ class OrderDelivery extends Model
 
     protected $fillable = [
         'checkout_num',
+        'user_id',
+        'user_ip',
         'total_price',
         'name',
         'email',

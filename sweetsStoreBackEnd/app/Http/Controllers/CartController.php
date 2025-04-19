@@ -9,129 +9,15 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-use Illuminate\Support\Facades\Session;
-
 class CartController extends Controller
 {
-    public function addToCart(Request $request, $item_id)
-    {
-        $item = Item::findOrFail($item_id);
-
-        if (auth()->check()) {
-            $cartItem = Cart::where('item_id', $item_id)->where('user_id', auth()->id())->first();
-
-            if ($cartItem) {
-                $cartItem->quantity += 1;
-                $cartItem->save();
-            } else {
-                Cart::create([
-                    'user_id' => auth()->id(),
-                    'item_id' => $item_id,
-                    'quantity' => 1,
-                    'created_at' => Carbon::now(),
-                ]);
-            }
-        } else {
-            $cart = session()->get('cart', []);
-
-            if (isset($cart[$item_id])) {
-                $cart[$item_id]['quantity']++;
-            } else {
-                $cart[$item_id] = [
-                    'item_id' => $item_id,
-                    'quantity' => 1,
-                ];
-            }
-
-            session()->put('cart', $cart);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Item added to the cart.',
-        ]);
-    }
-
-    public function updateCart(Request $request, $cartId)
-    {
-        if (auth()->check()) {
-            $cartItem = Cart::findOrFail($cartId);
-            $cartItem->quantity = $request->quantity;
-            $cartItem->save();
-
-            $total = Cart::with('item')->where('user_id', auth()->id())->get()->sum(function ($item) {
-                return $item->item->item_price * $item->quantity;
-            });
-
-            return response()->json(['success' => true, 'total' => $total]);
-        } else {
-            $cart = session()->get('cart', []);
-            if (isset($cart[$cartId])) {
-                $cart[$cartId]['quantity'] = $request->quantity;
-                session()->put('cart', $cart);
-
-                $total = array_reduce($cart, function ($carry, $item) {
-                    return $carry + ($item['price'] * $item['quantity']);
-                }, 0);
-
-                return response()->json(['success' => true, 'total' => $total]);
-            }
-        }
-
-        return response()->json(['success' => false, 'message' => 'Item not found']);
-    }
-
-
-    public function removeFromCart($cartId)
-    {
-        if (auth()->check()) {
-            $cartItem = Cart::findOrFail($cartId);
-            $cartItem->delete();
-        } else {
-            $cart = session()->get('cart', []);
-            unset($cart[$cartId]);
-            session()->put('cart', $cart);
-        }
-
-        return redirect()->route('cart.view');
-    }
-
-    public function viewCart()
-    {
-        if (auth()->check()) {
-            $cartItems = Cart::where('user_id', auth()->id())->get();
-        } else {
-            $cartItems = session()->get('cart', []);
-        }
-
-        return view('UsersPage.Cart', compact('cartItems'));
-    }
-
-    public function statistics()
-    {
-        $totalCart = Cart::count();
-        return view('dashboard', compact('totalCart'));
-    }
-
-    public function clearCart()
-    {
-        Cart::where('user_id', auth()->id())->delete();
-        return response()->json(['success' => true]);
-    }
-    public function getCartItems($userId)
-    {
-        $cartItems = Cart::where('user_id', $userId)->get();
-        return response()->json($cartItems);
-    }
-
-
     public function addToCartUsersSide(Request $request)
     {
         try {
             $product_id = $request->input('product_id');
             $quantity = $request->input('quantity', 1);
             $weight = $request->input('weight', null);
-
+    
             $product = Product::find($product_id);
             if (!$product) {
                 return response()->json([
@@ -139,15 +25,15 @@ class CartController extends Controller
                     'message' => 'Product not found.',
                 ], 404);
             }
-
+    
             if (auth('sanctum')->check()) {
                 $user_id = auth('sanctum')->id();
-
+    
                 $cartItem = Cart::where('product_id', $product_id)
                     ->where('user_id', $user_id)
                     ->where('weight', $weight)
                     ->first();
-
+    
                 if ($cartItem) {
                     $cartItem->quantity += $quantity;
                     $cartItem->save();
@@ -161,23 +47,27 @@ class CartController extends Controller
                     ]);
                 }
             } else {
-                $cart = session()->get('cart', []);
-
-                $cartKey = $product_id . '-' . $weight;
-
-                if (isset($cart[$cartKey])) {
-                    $cart[$cartKey]['quantity'] += $quantity;
+                $user_ip = $request->ip();
+    
+                $cartItem = Cart::where('product_id', $product_id)
+                    ->where('user_ip', $user_ip)
+                    ->where('weight', $weight)
+                    ->first();
+    
+                if ($cartItem) {
+                    $cartItem->quantity += $quantity;
+                    $cartItem->save();
                 } else {
-                    $cart[$cartKey] = [
+                    Cart::create([
+                        'user_ip' => $user_ip,
                         'product_id' => $product_id,
                         'quantity' => $quantity,
                         'weight' => $weight,
-                    ];
+                        'created_at' => Carbon::now(),
+                    ]);
                 }
-
-                session()->put('cart', $cart);
             }
-
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Product added to cart successfully.',
@@ -191,38 +81,24 @@ class CartController extends Controller
         }
     }
 
-
-
-
-
-    public function CartUsersSide(Request $request)
-    {
+    public function CartUsersSide(Request $request) {
         $user_id = $request->input('user_id');
-
-        if (!$user_id) {
-            return response()->json([
-                'status' => 400,
-                'message' => 'User ID is required.',
-            ], 400);
+        $user_ip = $request->input('user_ip');
+        
+        if ($user_id) {
+            $cart = Cart::with('product')
+                ->where('user_id', $user_id)
+                ->get();
+        } else if ($user_ip) {
+            $cart = Cart::with('product')
+                ->where('user_ip', $user_ip)
+                ->get();
+        } else {
+            return response()->json(['cart' => []]);
         }
-
-        $cart = Cart::where('user_id', $user_id)
-            ->with('product:product_id,product_name,product_image,product_price,offers')
-            ->get();
-
-        $cart->transform(function ($item) {
-            if ($item->product) {
-                $item->product->product_image = asset('storage/' . $item->product->product_image);
-            }
-            return $item;
-        });
-
-        return response()->json([
-            'status' => 200,
-            'cart' => $cart,
-        ]);
+        
+        return response()->json(['cart' => $cart]);
     }
-
     public function removeCartItem($cartId)
     {
         $cartItem = Cart::find($cartId);
@@ -241,46 +117,53 @@ class CartController extends Controller
             'message' => 'تم حذف العنصر من السلة بنجاح!',
         ]);
     }
+
     public function clearCartUsersSide(Request $request)
     {
-        $userId = $request->input('user_id');
-
-        if (!$userId) {
+        $user_id = $request->input('user_id');
+        $user_ip = $request->input('user_ip');
+    
+        $query = Cart::query();
+    
+        if ($user_id) {
+            $query->where('user_id', $user_id);
+        } elseif ($user_ip) {
+            $query->where('user_ip', $user_ip);
+        } else {
             return response()->json([
                 'status' => 400,
-                'message' => 'يجب تقديم معرف المستخدم (user_id).',
+                'message' => 'يجب توفير user_id أو user_ip',
             ], 400);
         }
-
-        $cartItems = Cart::where('user_id', $userId)->get();
-
+    
+        $cartItems = $query->get();
+    
         if ($cartItems->isEmpty()) {
             return response()->json([
                 'status' => 404,
                 'message' => 'لا توجد عناصر في السلة.',
             ], 404);
         }
-
-        foreach ($cartItems as $cartItem) {
-            $cartItem->delete();
-        }
-
+    
+        $query->delete();
+    
         return response()->json([
             'status' => 200,
-            'message' => 'تم مسح جميع العناصر من السلة بنجاح!',
+            'message' => 'تم مسح السلة بنجاح',
         ]);
     }
+
     public function topProducts(Request $request)
     {
         $cart = Cart::with('product:product_id,product_name,product_image,product_price,offers')
             ->get();
-    
+
         $productCount = [];
-    
+
         foreach ($cart as $item) {
             if ($item->product) {
                 $productId = $item->product->product_id;
-    
+
                 if (isset($productCount[$productId])) {
                     $productCount[$productId]['count'] += 1;
                 } else {
@@ -291,23 +174,68 @@ class CartController extends Controller
                 }
             }
         }
-    
+
         $sortedProducts = collect($productCount)
             ->sortByDesc(function ($product) {
                 return $product['count'];
             })
             ->take(3)
             ->values();
-    
+
         $topProducts = $sortedProducts->map(function ($product) {
             $product['product']->product_image = asset('storage/' . $product['product']->product_image);
             return $product['product'];
         });
-    
+
         return response()->json([
             'status' => 200,
             'top_products' => $topProducts,
         ]);
     }
-    
+
+    public function addToCart(Request $request, $item_id)
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'This endpoint is deprecated. Use addToCartUsersSide instead.',
+        ], 410);
+    }
+
+    public function updateCart(Request $request, $cartId)
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'This endpoint is deprecated.',
+        ], 410);
+    }
+
+    public function removeFromCart($cartId)
+    {
+        return redirect()->route('cart.view');
+    }
+
+    public function viewCart()
+    {
+        return view('UsersPage.Cart', ['cartItems' => []]);
+    }
+
+    public function statistics()
+    {
+        $totalCart = Cart::count();
+        return view('dashboard', compact('totalCart'));
+    }
+
+    public function clearCart()
+    {
+        if (auth('sanctum')->check()) {
+            Cart::where('user_id', auth('sanctum')->id())->delete();
+        }
+        return response()->json(['success' => true]);
+    }
+
+    public function getCartItems($userId)
+    {
+        $cartItems = Cart::where('user_id', $userId)->get();
+        return response()->json($cartItems);
+    }
 }
