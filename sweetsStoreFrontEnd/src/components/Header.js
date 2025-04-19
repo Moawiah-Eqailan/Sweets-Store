@@ -31,7 +31,11 @@ const Header = () => {
       );
       setCartCount(totalItems);
     } catch (error) {
-      console.error("Error fetching cart count:", error);
+      if (error.response?.status === 429) {
+        console.warn("Rate limit exceeded. Please try again later.");
+      } else {
+        console.error("Error fetching cart count:", error);
+      }
     }
   };
 
@@ -43,6 +47,7 @@ const Header = () => {
       setIsLoggedIn(true);
     } else {
       setIsLoggedIn(false);
+      setCartCount(0); // Reset cart count when logged out
     }
 
     axios
@@ -54,18 +59,16 @@ const Header = () => {
         console.error("Error fetching categories:", error);
       });
 
-    fetchCartCount();
-
-    const intervalId = setInterval(fetchCartCount, 1000);
-
-    return () => clearInterval(intervalId);
-  }, [isLoggedIn]); 
+    if (isLoggedIn) {
+      fetchCartCount(); // Fetch cart count only when logged in
+    }
+  }, [isLoggedIn]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     setIsLoggedIn(false);
-    setCartCount(0); 
+    setCartCount(0);
   };
 
   return (
